@@ -736,6 +736,66 @@ class Connection(Context):
         """
         return self._sudo(self._remote_runner(), command, **kwargs)
 
+    @opens
+    def shell(self, xxx):
+        """
+        Run an interactive login shell on the remote end, as with ``ssh``.
+
+        This method is intended strictly for use cases where you can't know
+        what remote shell to invoke, or are connecting to a non-POSIX-server
+        environment such as a network appliance or other custom SSH server.
+        Nearly every other use case, including interactively-focused ones, will
+        be better served by using `run` plus an explicit remote shell command
+        (eg ``bash``).
+
+        `shell` has the following differences in behavior from `run`:
+
+        - There is **no return value**: the SSH server cannot usefully tell us
+          how the remote login shell exited, as this method uses the SSH
+          ``shell`` channel request under the hood, instead of ``exec`` as used
+          by `run` and friends.
+          TODO: is this true?? can't we return a degraded Result? eg NOT
+          capturing stdout would likely be extra work we might not need
+        - Similarly, this method behaves as if ``warn`` is set to ``True``:
+          even if the remote shell exits uncleanly, no exception will be
+          raised.
+          TODO: same, this might actually want to play straight
+        - A pty is always allocated remotely, as with ``pty=True`` under `run`.
+        - The ``inline_env`` setting is ignored, as there is no default shell
+          command to add the parameters to (and no guarantee the remote end
+          even is a shell!)
+
+        It supports **only** the following kwargs, which behave identically to
+        their counterparts in `run` unless otherwise stated:
+
+        - ``encoding``
+        - ``env``
+        - ``replace_env``
+        - TODO: watchers? why not, right? superpowers!
+        - TODO: timeout? feels like not that useful? if you wouldn't be able to
+          successfully Ctrl-C there may not be much a timeout could do...
+
+        Those keyword arguments also honor configuration, specificially:
+
+        - They'll default to looking at the ``run.*`` tree, e.g.
+          ``run.encoding``.
+        - However, you may separate the behaviors of ``run`` and ``shell`` by
+          setting overrides in the ``shell.*`` tree, e.g. ``shell.encoding``.
+        - *Be careful* when manipulating the ``shell.*`` config tree; it has
+          certain defaults (such as ``pty``) which cannot be modified without
+          breaking core `shell` behavior.
+
+        :returns: ``None``. (TODO: or not? lol)
+
+        :raises:
+            `.ThreadException` (if the background I/O threads encountered
+            exceptions other than `.WatcherError`).
+
+        .. versionadded:: 2.7
+        """
+        # TODO: config: its own subtree that 'masks' on top of 'run' (like how
+        # sudo's should or does)?
+
     def local(self, *args, **kwargs):
         """
         Execute a shell command on the local system.
