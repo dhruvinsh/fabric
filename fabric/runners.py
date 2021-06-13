@@ -62,9 +62,9 @@ class Remote(Runner):
                 command = "export {} && {}".format(parameters, command)
             else:
                 self.channel.update_environment(env)
-        self._send_start_message(command)
+        self.send_start_message(command)
 
-    def _send_start_message(self, command):
+    def send_start_message(self, command):
         self.channel.exec_command(command)
 
     def run(self, command, **kwargs):
@@ -151,7 +151,7 @@ class Remote(Runner):
 
 
 class RemoteShell(Remote):
-    def _send_start_message(self, command):
+    def send_start_message(self, command):
         self.channel.invoke_shell()
 
 
